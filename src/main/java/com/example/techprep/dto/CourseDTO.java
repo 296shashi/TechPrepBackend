@@ -17,10 +17,19 @@ public class CourseDTO {
     private String category;
 
     private Integer lessons;
-    private Integer enrolled;
+    private Integer enrolledCount;
     private Double rating;
     private Double price;
     private String image;
 
     private List<SyllabusSectionDTO> syllabus;
+
+    // Indicates if the current user is enrolled in this course
+    private boolean enrolled;
+    // Total lessons in the course (computed from syllabus)
+    private Integer totalLessons;
+    // Number of lessons completed by the current user
+    private Integer completedLessons;
+    // List of lesson ids completed by the current user (for this course)
+    private java.util.List<Long> completedLessonIds;
 }

@@ -19,7 +19,11 @@ public class Lesson {
 
     private String title;
     private String duration;
-    private Boolean completed;
+
+    // Whether this lesson is active/available to users
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private LessonStatus status = LessonStatus.INACTIVE;
 
     @ManyToOne
     @JoinColumn(name = "section_id")

@@ -3,6 +3,8 @@ package com.example.techprep.controller;
 import com.example.techprep.dto.CourseDTO;
 import com.example.techprep.entity.SyllabusSection;
 import com.example.techprep.service.CourseService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +17,7 @@ import java.util.List;
 public class CourseController {
 
     private final CourseService courseService;
+    private static final Logger logger = LoggerFactory.getLogger(CourseController.class);
 
     public CourseController(CourseService courseService) {
         this.courseService = courseService;
@@ -32,24 +35,42 @@ public class CourseController {
 
     // Read all (optionally for authenticated user)
     @GetMapping
-    public ResponseEntity<List<CourseDTO>> getAllCourses() {
-        List<CourseDTO> courses = courseService.getAllCourses((String) null);
-        return ResponseEntity.ok(courses);
-    }
-
-    @GetMapping("/enrolled")
-    public ResponseEntity<List<CourseDTO>> getEnrolledCourses(Authentication authentication) {
+    public ResponseEntity<List<CourseDTO>> getAllCourses(Authentication authentication) {
         String email = authentication != null ? String.valueOf(authentication.getPrincipal()) : null;
         List<CourseDTO> courses = courseService.getAllCourses(email);
         return ResponseEntity.ok(courses);
     }
 
+    @GetMapping("/enrolled")
+    public ResponseEntity<List<CourseDTO>> getEnrolledCourses(Authentication authentication) {
+        String email = null;
+        try {
+            if (authentication != null) {
+                email = authentication.getName();
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to extract authentication name: {}", e.getMessage());
+            email = null;
+        }
+
+        List<CourseDTO> allCourses = courseService.getAllCourses(email);
+        // Only return those where enrolled == true
+        List<CourseDTO> enrolledCourses = new java.util.ArrayList<>();
+        for (CourseDTO dto : allCourses) {
+            if (dto.isEnrolled()) {
+                enrolledCourses.add(dto);
+            }
+        }
+        return ResponseEntity.ok(enrolledCourses);
+    }
+
    // Read by ID
    @GetMapping("/{id}")
-   public ResponseEntity<CourseDTO> getCourseById(@PathVariable Long id) {
-       CourseDTO CourseDTO = courseService.getCourseById(id)
+   public ResponseEntity<CourseDTO> getCourseById(@PathVariable Long id, Authentication authentication) {
+       String email = authentication != null ? String.valueOf(authentication.getPrincipal()) : null;
+       CourseDTO dto = courseService.getCourseById(id, email)
                .orElseThrow(() -> new RuntimeException("CourseDTO not found with id " + id));
-       return ResponseEntity.ok(CourseDTO);
+       return ResponseEntity.ok(dto);
    }
 
    // Update
