@@ -1,7 +1,10 @@
 package com.example.techprep.controller;
 
-import com.example.techprep.entity.Course;
+import com.example.techprep.dto.CourseDTO;
+import com.example.techprep.entity.SyllabusSection;
 import com.example.techprep.service.CourseService;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,37 +22,70 @@ public class CourseController {
 
     // Create
     @PostMapping
-    public ResponseEntity<Course> createCourse(@RequestBody Course course) {
-        Course createdCourse = courseService.createCourse(course);
+    public ResponseEntity<CourseDTO> createCourse(@RequestBody CourseDTO courseDTO) {
+        // if authenticated, enroll creator automatically
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth != null ? String.valueOf(auth.getPrincipal()) : null;
+        CourseDTO createdCourse = courseService.createCourse(courseDTO, email);
         return ResponseEntity.ok(createdCourse);
     }
 
-    // Read all
+    // Read all (optionally for authenticated user)
     @GetMapping
-    public ResponseEntity<List<Course>> getAllCourses() {
-        List<Course> courses = courseService.getAllCourses();
+    public ResponseEntity<List<CourseDTO>> getAllCourses() {
+        List<CourseDTO> courses = courseService.getAllCourses((String) null);
         return ResponseEntity.ok(courses);
     }
 
-    // Read by ID
-    @GetMapping("/{id}")
-    public ResponseEntity<Course> getCourseById(@PathVariable Long id) {
-        Course course = courseService.getCourseById(id)
-                .orElseThrow(() -> new RuntimeException("Course not found with id " + id));
-        return ResponseEntity.ok(course);
+    @GetMapping("/enrolled")
+    public ResponseEntity<List<CourseDTO>> getEnrolledCourses(Authentication authentication) {
+        String email = authentication != null ? String.valueOf(authentication.getPrincipal()) : null;
+        List<CourseDTO> courses = courseService.getAllCourses(email);
+        return ResponseEntity.ok(courses);
     }
 
-    // Update
-    @PutMapping("/{id}")
-    public ResponseEntity<Course> updateCourse(@PathVariable Long id, @RequestBody Course courseDetails) {
-        Course updatedCourse = courseService.updateCourse(id, courseDetails);
-        return ResponseEntity.ok(updatedCourse);
+   // Read by ID
+   @GetMapping("/{id}")
+   public ResponseEntity<CourseDTO> getCourseById(@PathVariable Long id) {
+       CourseDTO CourseDTO = courseService.getCourseById(id)
+               .orElseThrow(() -> new RuntimeException("CourseDTO not found with id " + id));
+       return ResponseEntity.ok(CourseDTO);
+   }
+
+   // Update
+   @PutMapping("/{id}")
+   public ResponseEntity<CourseDTO> updateCourse(@PathVariable Long id, @RequestBody CourseDTO courseDetails) {
+       CourseDTO updatedCourse = courseService.updateCourse(id, courseDetails);
+       return ResponseEntity.ok(updatedCourse);
+   }
+
+   // Delete
+   @DeleteMapping("/{id}")
+   public ResponseEntity<Void> deleteCourse(@PathVariable Long id) {
+       courseService.deleteCourse(id);
+       return ResponseEntity.noContent().build();
+   }
+
+    // Enroll current authenticated user
+    @PostMapping("/{id}/enroll")
+    public ResponseEntity<Void> enrollUser(@PathVariable("id") Long courseId, Authentication authentication) {
+        String email = authentication != null ? String.valueOf(authentication.getPrincipal()) : null;
+        courseService.enrollUser(courseId, email);
+        return ResponseEntity.ok().build();
     }
 
-    // Delete
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCourse(@PathVariable Long id) {
-        courseService.deleteCourse(id);
-        return ResponseEntity.noContent().build();
+    // Unenroll current authenticated user
+    @PostMapping("/{id}/unenroll")
+    public ResponseEntity<Void> unenrollUser(@PathVariable("id") Long courseId, Authentication authentication) {
+        String email = authentication != null ? String.valueOf(authentication.getPrincipal()) : null;
+        courseService.unenrollUser(courseId, email);
+        return ResponseEntity.ok().build();
     }
+
+   // Get syllabus by course ID
+   @GetMapping("/syllabus/{courseId}")
+   public ResponseEntity<List<SyllabusSection>> getSyllabusByCourseId(@PathVariable Long courseId) {
+       List<SyllabusSection> syllabus = courseService.getSyllabusByCourseId(courseId);
+       return ResponseEntity.ok(syllabus);
+   }
 }

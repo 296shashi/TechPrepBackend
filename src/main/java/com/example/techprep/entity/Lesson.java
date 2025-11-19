@@ -1,9 +1,14 @@
 package com.example.techprep.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+
 @Entity
 @Table(name = "lessons")
 public class Lesson {
@@ -18,6 +23,7 @@ public class Lesson {
 
     @ManyToOne
     @JoinColumn(name = "section_id")
+    @JsonBackReference(value = "section-lessons")
     private SyllabusSection section;
 
 }
